@@ -1,0 +1,34 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: jobhub-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: jobhub
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./Backend/JobPortal
+    container_name: jobhub-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./Backend/JobPortal/.env
+    environment:
+      DB_URL: jdbc:mysql://db:3306/jobhub?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data:
